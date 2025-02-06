@@ -23,13 +23,28 @@ import '../widgets/filter_bottom_sheet_content.dart';
 ///   ),
 /// );
 /// ```
-class ActivityPage extends StatelessWidget {
+class ActivityPage extends StatefulWidget {
   static const String routeName = '/http-activity';
 
-  ActivityPage({Key? key}) : super(key: key);
+  const ActivityPage({Key? key}) : super(key: key);
 
+  @override
+  State<ActivityPage> createState() => _ActivityPageState();
+}
+
+class _ActivityPageState extends State<ActivityPage> {
   final _byteUtil = ByteUtil();
+
   final _dateTimeUtil = DateTimeUtil();
+  final TextEditingController _searchTEC = TextEditingController();
+  List<HttpActivity>? _allHTTPActivities = [];
+  List<HttpActivity> __filteredHTTPActivities = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _searchTEC.addListener(_filterAPILogs);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,35 +52,37 @@ class ActivityPage extends StatelessWidget {
       create: (context) => ActivityProvider(
         context: context,
       ),
-      builder: (context, child) => Scaffold(
+      builder: (providerContext, __) => Scaffold(
         appBar: AppBar(
           title: const Text('API Logs'),
           actions: [
             IconButton(
               onPressed: () {
-                onTapFilterIcon(context);
+                onTapFilterIcon(providerContext);
               },
               icon: const Icon(
                 Icons.filter_list_alt,
               ),
             ),
             IconButton(
-              onPressed: () {
-                final provider = context.read<ActivityProvider>();
+              onPressed: () => showClearAPILogDialog(onClear: () {
+                final provider = providerContext.read<ActivityProvider>();
                 provider.deleteActivities();
-              },
+                __filteredHTTPActivities.clear();
+                Navigator.of(context).pop();
+              }),
               icon: const Icon(
                 Icons.delete,
               ),
             ),
           ],
         ),
-        body: buildBody(context),
+        body: buildBody(),
       ),
     );
   }
 
-  Widget buildBody(BuildContext context) {
+  Widget buildBody() {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Consumer<ActivityProvider>(
@@ -73,14 +90,16 @@ class ActivityPage extends StatelessWidget {
           final result = provider.fetchedActivity;
           switch (provider.fetchedActivity.status) {
             case Status.loading:
-              return loadingWidget(context);
+              return loadingWidget();
             case Status.success:
-              return successBody(
-                context,
-                result.data,
-              );
+              if (_allHTTPActivities?.isEmpty ?? false) {
+                _allHTTPActivities = result.data;
+                __filteredHTTPActivities.addAll(_allHTTPActivities ?? []);
+              }
+
+              return successBody();
             case Status.error:
-              return errorMessage(context, result.message);
+              return errorMessage(result.message);
             default:
               return const SizedBox.shrink();
           }
@@ -89,18 +108,43 @@ class ActivityPage extends StatelessWidget {
     );
   }
 
-  Widget successBody(
-    BuildContext context,
-    List<HttpActivity>? data,
-  ) {
-    return Visibility(
-      visible: data?.isNotEmpty ?? false,
-      replacement: emptyBody(context),
-      child: activityList(context, data),
+  Widget successBody() {
+    return Column(
+      children: [
+        Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 8).copyWith(bottom: 12),
+          child: SizedBox(
+            height: 48,
+            child: SearchBar(
+              controller: _searchTEC,
+              backgroundColor: MaterialStateProperty.all(
+                Colors.white10,
+              ),
+              trailing: [
+                if (_searchTEC.text.isNotEmpty)
+                  IconButton(
+                    onPressed: () {
+                      _searchTEC.clear();
+                    },
+                    icon: const Icon(Icons.clear),
+                  )
+              ],
+            ),
+          ),
+        ),
+        Expanded(
+          child: Visibility(
+            visible: __filteredHTTPActivities.isNotEmpty,
+            replacement: emptyBody(),
+            child: activityList(),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget emptyBody(BuildContext context) {
+  Widget emptyBody() {
     return Center(
       child: Text(
         'There is no log, try to fetch something !',
@@ -109,7 +153,7 @@ class ActivityPage extends StatelessWidget {
     );
   }
 
-  Widget errorMessage(BuildContext context, error) {
+  Widget errorMessage(error) {
     return Center(
       child: Text(
         'Log has error $error',
@@ -118,7 +162,7 @@ class ActivityPage extends StatelessWidget {
     );
   }
 
-  Widget loadingWidget(BuildContext context) {
+  Widget loadingWidget() {
     return const Center(
       child: CircularProgressIndicator(),
     );
@@ -133,25 +177,19 @@ class ActivityPage extends StatelessWidget {
     );
   }
 
-  Widget activityList(
-    BuildContext context,
-    List<HttpActivity>? data,
-  ) {
+  Widget activityList() {
     return ListView.separated(
-      itemCount: data?.length ?? 0,
+      itemCount: __filteredHTTPActivities.length,
       separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (context, index) => activityTile(
-        context,
-        data![index],
-        index,
-      ),
+      itemBuilder: (context, index) =>
+          activityTile(__filteredHTTPActivities[index], index, context),
     );
   }
 
   Widget activityTile(
-    BuildContext context,
     HttpActivity activity,
     int index,
+    BuildContext context,
   ) {
     return ListTile(
       onTap: () {
@@ -238,6 +276,22 @@ class ActivityPage extends StatelessWidget {
     );
   }
 
+  void _filterAPILogs() {
+    setState(() {
+      if (_searchTEC.text.isEmpty) {
+        __filteredHTTPActivities = _allHTTPActivities ?? [];
+        return;
+      }
+      __filteredHTTPActivities = [];
+      _allHTTPActivities?.forEach((HttpActivity httpActivity) {
+        final String urlPath = httpActivity.request?.path?.toLowerCase() ?? '';
+        if (urlPath.contains(_searchTEC.text.toLowerCase())) {
+          __filteredHTTPActivities.add(httpActivity);
+        }
+      });
+    });
+  }
+
   void onTapFilterIcon(BuildContext context) {
     final provider = context.read<ActivityProvider>();
     showModalBottomSheet(
@@ -260,5 +314,36 @@ class ActivityPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  void showClearAPILogDialog({required VoidCallback onClear}) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Clear API logs?"),
+        content: const Text("Do you want to clear all API logs?"),
+        actions: [
+          TextButton(
+            onPressed: Navigator.of(context).pop,
+            child: const Text(
+              "CANCEL",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+              onPressed: onClear,
+              child: const Text(
+                "CLEAR",
+                style: TextStyle(color: Colors.white),
+              )),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchTEC.dispose();
+    super.dispose();
   }
 }

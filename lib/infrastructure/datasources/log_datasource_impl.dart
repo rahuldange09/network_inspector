@@ -99,6 +99,7 @@ class LogDatasourceImpl implements LogDatasource {
       where: hasFilter ? query : null,
       whereArgs: queryArgs,
       orderBy: 'created_at DESC',
+      limit: 180,
     );
     final requestModels = List<HttpRequestModel>.from(
       requestRows.map(
