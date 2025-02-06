@@ -111,7 +111,7 @@ class DioInterceptor extends Interceptor {
 
   Future<void> saveRequest(RequestOptions options) async {
     var payload = HttpRequest(
-      baseUrl: options.baseUrl,
+      baseUrl: options.uri.origin,
       path: options.uri.path,
       params: _jsonUtil.encodeRawJson(options.queryParameters),
       method: options.method,

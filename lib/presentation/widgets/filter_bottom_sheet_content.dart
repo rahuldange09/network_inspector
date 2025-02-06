@@ -48,6 +48,9 @@ class FilterBottomSheetContent extends StatelessWidget {
                               provider.selectedStatusCodes.contains(key);
                           return CheckboxListTile(
                             value: isChecked,
+                            fillColor: isChecked
+                                ? MaterialStateProperty.all(Colors.white)
+                                : null,
                             controlAffinity: ListTileControlAffinity.leading,
                             title: Row(
                               children: [
