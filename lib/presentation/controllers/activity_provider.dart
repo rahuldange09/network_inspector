@@ -90,6 +90,31 @@ class ActivityProvider extends ChangeNotifier {
     }
   }
 
+  Future search(String text, List<int?> selectedStatusCodes) async {
+    fetchedActivity = DataWrapper.loading();
+
+    List<HttpActivity> filteredHTTPActivities = [];
+    final allHTTPActivities = await _fetchHttpActivities
+        ?.execute(FetchHttpActivitiesParam(statusCodes: selectedStatusCodes));
+
+    if (text.isEmpty) {
+      filteredHTTPActivities = allHTTPActivities ?? [];
+      fetchedActivity = DataWrapper.success(filteredHTTPActivities);
+      notifyListeners();
+      return;
+    }
+
+    filteredHTTPActivities = [];
+    allHTTPActivities?.forEach((HttpActivity httpActivity) {
+      final String urlPath = httpActivity.request?.path?.toLowerCase() ?? '';
+      if (urlPath.contains(text.toLowerCase())) {
+        filteredHTTPActivities.add(httpActivity);
+      }
+    });
+    fetchedActivity = DataWrapper.success(filteredHTTPActivities);
+    notifyListeners();
+  }
+
   Future<void> deleteActivities() async {
     await _fetchHttpActivities?.deleteHttpActivities();
     fetchActivities();

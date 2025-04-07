@@ -37,8 +37,9 @@ class _ActivityPageState extends State<ActivityPage> {
 
   final _dateTimeUtil = DateTimeUtil();
   final TextEditingController _searchTEC = TextEditingController();
-  List<HttpActivity>? _allHTTPActivities = [];
-  List<HttpActivity> __filteredHTTPActivities = [];
+  List<HttpActivity> _allHTTPActivities = [];
+  late List<int?> _selectedStatusCodes = [];
+  BuildContext? _buildContext;
 
   @override
   void initState() {
@@ -52,33 +53,42 @@ class _ActivityPageState extends State<ActivityPage> {
       create: (context) => ActivityProvider(
         context: context,
       ),
-      builder: (providerContext, __) => Scaffold(
-        appBar: AppBar(
-          title: const Text('API Logs'),
-          actions: [
-            IconButton(
-              onPressed: () {
-                onTapFilterIcon(providerContext);
-              },
-              icon: const Icon(
-                Icons.filter_list_alt,
+      builder: (providerContext, __) {
+        _buildContext = providerContext;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('API Logs'),
+            actions: [
+              IconButton(
+                onPressed: () {
+                  onTapFilterIcon(providerContext);
+                },
+                icon: Consumer<ActivityProvider>(
+                  builder: (_, provider, child) {
+                    return Icon(
+                      Icons.filter_list_alt,
+                      color: _selectedStatusCodes.isEmpty
+                          ? Colors.white
+                          : Colors.redAccent,
+                    );
+                  },
+                ),
               ),
-            ),
-            IconButton(
-              onPressed: () => showClearAPILogDialog(onClear: () {
-                final provider = providerContext.read<ActivityProvider>();
-                provider.deleteActivities();
-                __filteredHTTPActivities.clear();
-                Navigator.of(context).pop();
-              }),
-              icon: const Icon(
-                Icons.delete,
+              IconButton(
+                onPressed: () => showClearAPILogDialog(onClear: () {
+                  final provider = providerContext.read<ActivityProvider>();
+                  provider.deleteActivities();
+                  Navigator.of(context).pop();
+                }),
+                icon: const Icon(
+                  Icons.delete,
+                ),
               ),
-            ),
-          ],
-        ),
-        body: buildBody(),
-      ),
+            ],
+          ),
+          body: buildBody(),
+        );
+      },
     );
   }
 
@@ -86,16 +96,13 @@ class _ActivityPageState extends State<ActivityPage> {
     return Padding(
       padding: const EdgeInsets.all(8),
       child: Consumer<ActivityProvider>(
-        builder: (context, provider, child) {
+        builder: (_, provider, child) {
           final result = provider.fetchedActivity;
           switch (provider.fetchedActivity.status) {
             case Status.loading:
               return loadingWidget();
             case Status.success:
-              if (_allHTTPActivities?.isEmpty ?? false) {
-                _allHTTPActivities = result.data;
-                __filteredHTTPActivities.addAll(_allHTTPActivities ?? []);
-              }
+              _allHTTPActivities = result.data ?? [];
 
               return successBody();
             case Status.error:
@@ -135,7 +142,7 @@ class _ActivityPageState extends State<ActivityPage> {
         ),
         Expanded(
           child: Visibility(
-            visible: __filteredHTTPActivities.isNotEmpty,
+            visible: _allHTTPActivities.isNotEmpty,
             replacement: emptyBody(),
             child: activityList(),
           ),
@@ -179,10 +186,10 @@ class _ActivityPageState extends State<ActivityPage> {
 
   Widget activityList() {
     return ListView.separated(
-      itemCount: __filteredHTTPActivities.length,
-      separatorBuilder: (context, index) => const Divider(),
+      itemCount: _allHTTPActivities.length,
+      separatorBuilder: (_, __) => const Divider(),
       itemBuilder: (context, index) =>
-          activityTile(__filteredHTTPActivities[index], index, context),
+          activityTile(_allHTTPActivities[index], index, context),
     );
   }
 
@@ -277,19 +284,8 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   void _filterAPILogs() {
-    setState(() {
-      if (_searchTEC.text.isEmpty) {
-        __filteredHTTPActivities = _allHTTPActivities ?? [];
-        return;
-      }
-      __filteredHTTPActivities = [];
-      _allHTTPActivities?.forEach((HttpActivity httpActivity) {
-        final String urlPath = httpActivity.request?.path?.toLowerCase() ?? '';
-        if (urlPath.contains(_searchTEC.text.toLowerCase())) {
-          __filteredHTTPActivities.add(httpActivity);
-        }
-      });
-    });
+    final provider = _buildContext?.read<ActivityProvider>();
+    provider?.search(_searchTEC.text.trim(), _selectedStatusCodes);
   }
 
   void onTapFilterIcon(BuildContext context) {
@@ -307,6 +303,7 @@ class _ActivityPageState extends State<ActivityPage> {
               onTapApplyFilter: (list) {
                 Navigator.pop(context);
                 provider.filterHttpActivities(list);
+                _selectedStatusCodes = list;
               },
               provider: provider.filterProvider!,
             ),

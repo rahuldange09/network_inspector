@@ -1,5 +1,11 @@
 ## 1.1.1 - 04 Mar 2024
 
+* Fixed status filter not working
+* Added status code filter with search
+* Some cosmetic changes
+
+## 1.1.1 - 04 Mar 2024
+
 * Added a flag to enable/disable console logging
 
 ## 1.1.0 - 11 June 2023
