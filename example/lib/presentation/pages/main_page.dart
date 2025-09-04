@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:network_inspector/presentation/pages/activity_page.dart';
 
 import 'dio_page.dart';
 import 'http_page.dart';
@@ -13,6 +14,17 @@ class MainPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Network Inspector'),
+      ),
+      floatingActionButton: FloatingActionButton.large(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const ActivityPage(),
+            ),
+          );
+        },
+        child: const Text("Open Activity Page"),
       ),
       body: ListView(
         children: [

@@ -1,31 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
 
 import '../../infrastructure/models/http_request_model.dart';
 import '../../infrastructure/models/http_response_model.dart';
 import '../../infrastructure/models/map_to_table.dart';
+import 'db_factory.dart';
 
 class DatabaseHelper {
   static const String databaseName = 'network_inspector.db';
   static const int databaseVersion = 1;
 
   static Future<Database> initialize() async {
-    var database = openDatabase(
+    final factory = getDatabaseFactory();
+    var database = await factory.openDatabase(
       databaseName,
-      version: databaseVersion,
-      onCreate: (Database db, int version) async {
-        debugPrint('Database Created');
-        await initializeTable(
-          database: db,
-          version: version,
-        );
-      },
-      onConfigure: (Database db) {
-        debugPrint('Configuring Database..');
-      },
-      onOpen: (Database db) {
-        debugPrint('Database Open & Connected');
-      },
+      options: OpenDatabaseOptions(
+        version: databaseVersion,
+        onCreate: (Database db, int version) async {
+          debugPrint('Database Created');
+          await initializeTable(
+            database: db,
+            version: version,
+          );
+        },
+        onConfigure: (Database db) {
+          debugPrint('Configuring Database..');
+        },
+        onOpen: (Database db) {
+          debugPrint('Database Open & Connected');
+        },
+      ),
     );
     return database;
   }
@@ -74,7 +78,8 @@ class DatabaseHelper {
   }
 
   static Future<Database> connect() async {
-    var database = openDatabase(databaseName);
+    final factory = getDatabaseFactory();
+    var database = await factory.openDatabase(databaseName);
     return database;
   }
 

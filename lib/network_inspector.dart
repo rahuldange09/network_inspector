@@ -1,7 +1,7 @@
 library network_inspector;
 
 /// Import section
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
 import 'common/utils/database_helper.dart';
 import 'domain/entities/http_request.dart';
 import 'domain/entities/http_response.dart';

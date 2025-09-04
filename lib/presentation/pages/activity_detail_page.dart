@@ -22,44 +22,47 @@ class ActivityDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ActivityDetailProvider>(
-      create: (context) => ActivityDetailProvider(
-        httpActivity: httpActivity,
-        context: context,
+    return Theme(
+      data: ThemeData.dark(),
+      child: ChangeNotifierProvider<ActivityDetailProvider>(
+        create: (context) => ActivityDetailProvider(
+          httpActivity: httpActivity,
+          context: context,
+        ),
+        builder: (context, child) {
+          final provider = context.read<ActivityDetailProvider>();
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('API Log Details'),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    provider.buildJson(
+                      provider.shareHttpActivity,
+                      HttpActivityActionType.share,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.share,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    provider.buildJson(
+                      provider.copyHttpActivity,
+                      HttpActivityActionType.copy,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.copy,
+                  ),
+                ),
+              ],
+            ),
+            body: buildBody(context),
+          );
+        },
       ),
-      builder: (context, child) {
-        final provider = context.read<ActivityDetailProvider>();
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('API Log Details'),
-            actions: [
-              IconButton(
-                onPressed: () {
-                  provider.buildJson(
-                    provider.shareHttpActivity,
-                    HttpActivityActionType.share,
-                  );
-                },
-                icon: const Icon(
-                  Icons.share,
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  provider.buildJson(
-                    provider.copyHttpActivity,
-                    HttpActivityActionType.copy,
-                  );
-                },
-                icon: const Icon(
-                  Icons.copy,
-                ),
-              ),
-            ],
-          ),
-          body: buildBody(context),
-        );
-      },
     );
   }
 

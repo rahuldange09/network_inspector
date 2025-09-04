@@ -49,46 +49,49 @@ class _ActivityPageState extends State<ActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ActivityProvider>(
-      create: (context) => ActivityProvider(
-        context: context,
-      ),
-      builder: (providerContext, __) {
-        _buildContext = providerContext;
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('API Logs'),
-            actions: [
-              IconButton(
-                onPressed: () {
-                  onTapFilterIcon(providerContext);
-                },
-                icon: Consumer<ActivityProvider>(
-                  builder: (_, provider, child) {
-                    return Icon(
-                      Icons.filter_list_alt,
-                      color: _selectedStatusCodes.isEmpty
-                          ? Colors.white
-                          : Colors.redAccent,
-                    );
+    return Theme(
+      data: ThemeData.dark(),
+      child: ChangeNotifierProvider<ActivityProvider>(
+        create: (context) => ActivityProvider(
+          context: context,
+        ),
+        builder: (providerContext, __) {
+          _buildContext = providerContext;
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('API Logs'),
+              actions: [
+                IconButton(
+                  onPressed: () {
+                    onTapFilterIcon(providerContext);
                   },
+                  icon: Consumer<ActivityProvider>(
+                    builder: (_, provider, child) {
+                      return Icon(
+                        Icons.filter_list_alt,
+                        color: _selectedStatusCodes.isEmpty
+                            ? Colors.white
+                            : Colors.redAccent,
+                      );
+                    },
+                  ),
                 ),
-              ),
-              IconButton(
-                onPressed: () => showClearAPILogDialog(onClear: () {
-                  final provider = providerContext.read<ActivityProvider>();
-                  provider.deleteActivities();
-                  Navigator.of(context).pop();
-                }),
-                icon: const Icon(
-                  Icons.delete,
+                IconButton(
+                  onPressed: () => showClearAPILogDialog(onClear: () {
+                    final provider = providerContext.read<ActivityProvider>();
+                    provider.deleteActivities();
+                    Navigator.of(context).pop();
+                  }),
+                  icon: const Icon(
+                    Icons.delete,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          body: buildBody(),
-        );
-      },
+              ],
+            ),
+            body: buildBody(),
+          );
+        },
+      ),
     );
   }
 
@@ -297,7 +300,7 @@ class _ActivityPageState extends State<ActivityPage> {
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
-            ),
+            ).copyWith(bottom: 16),
             child: FilterBottomSheetContent(
               responseStatusCodes: provider.statusCodes,
               onTapApplyFilter: (list) {
@@ -314,7 +317,7 @@ class _ActivityPageState extends State<ActivityPage> {
   }
 
   void showClearAPILogDialog({required VoidCallback onClear}) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Clear API logs?"),

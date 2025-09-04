@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
 
 import '../models/http_activity_model.dart';
 import '../models/http_request_model.dart';
