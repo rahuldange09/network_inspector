@@ -70,11 +70,13 @@ class DatabaseHelper {
     var ddl = '''create table ${migrationObject.tableName} ($query)''';
 
     /// Execute ddl
-    await database.execute(ddl).then((_) {
+    try {
+      await database.execute(ddl);
       debugPrint('DDL Executed DDL : $ddl');
-    }).onError((error, stackTrace) {
-      debugPrint('Error when execute DDL : ${stackTrace.toString()}');
-    }).whenComplete(() => close(database));
+    } catch (error, stackTrace) {
+      debugPrint('Error when execute DDL : $stackTrace');
+      rethrow;
+    }
   }
 
   static Future<Database> connect() async {
